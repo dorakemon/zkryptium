@@ -29,6 +29,7 @@ use crate::{
         util::bbsplus_utils::{calculate_domain, hash_to_scalar, ScalarExt},
     },
 };
+use alloc::{borrow::ToOwned, vec::Vec};
 use bls12_381_plus::{G1Projective, Scalar};
 use elliptic_curve::hash2curve::ExpandMsg;
 
@@ -284,6 +285,8 @@ mod tests {
             generics::BlindSignature,
         },
     };
+    use alloc::string::String;
+    use alloc::vec::Vec;
     use elliptic_curve::hash2curve::ExpandMsg;
     use std::fs;
 

@@ -14,39 +14,42 @@
 
 use super::ciphersuites::BbsCiphersuite;
 use crate::utils::util::bbsplus_utils::i2osp;
+// use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
 use bls12_381_plus::G1Projective;
-use elliptic_curve::group::Curve;
+// use elliptic_curve::group::Curve;
 use elliptic_curve::hash2curve::{ExpandMsg, Expander};
-use serde::ser::{SerializeStruct, Serializer};
-use serde::{Deserialize, Serialize};
+// use serde::ser::{SerializeStruct, Serializer};
+// use serde::Serialize;
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Generators {
     pub g1_base_point: G1Projective,
     pub values: Vec<G1Projective>,
 }
 
-impl Serialize for Generators {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let result: Vec<String> = self
-            .values
-            .iter()
-            .map(|item| hex::encode(item.to_affine().to_compressed()))
-            .collect();
+// impl Serialize for Generators {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         let result: Vec<String> = self
+//             .values
+//             .iter()
+//             .map(|item| hex::encode(item.to_affine().to_compressed()))
+//             .collect();
 
-        let mut state = serializer.serialize_struct("Generators", 4)?;
-        state.serialize_field(
-            "BP",
-            &hex::encode(self.g1_base_point.to_affine().to_compressed()),
-        )?;
+//         let mut state = serializer.serialize_struct("Generators", 4)?;
+//         state.serialize_field(
+//             "BP",
+//             &hex::encode(self.g1_base_point.to_affine().to_compressed()).as_str(),
+//         )?;
 
-        state.serialize_field("Generators", &result)?;
-        state.end()
-    }
-}
+//         state.serialize_field("Generators", &result)?;
+//         state.end()
+//     }
+// }
 
 impl Generators {
     /// # Description
@@ -122,6 +125,7 @@ mod tests {
     use crate::bbsplus::generators::Generators;
     use crate::schemes::algorithms::Scheme;
     use crate::schemes::algorithms::{BbsBls12381Sha256, BbsBls12381Shake256};
+    use alloc::vec::Vec;
     use elliptic_curve::{group::Curve, hash2curve::ExpandMsg};
     use std::fs;
 

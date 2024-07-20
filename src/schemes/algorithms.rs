@@ -13,11 +13,11 @@
 // limitations under the License.
 
 use crate::keys::traits::{PrivateKey, PublicKey};
+use core::marker::PhantomData;
 use digest::HashMarker;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sha2::Sha256;
 use sha3::Shake256;
-use std::marker::PhantomData;
 
 #[cfg(feature = "bbsplus")]
 use crate::bbsplus::{

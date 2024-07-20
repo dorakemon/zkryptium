@@ -19,14 +19,23 @@ pub mod bbsplus_utils {
         bbsplus::commitment::BlindFactor, errors::Error,
         utils::message::bbsplus_message::BBSplusMessage,
     };
+    use alloc::borrow::ToOwned;
+    use alloc::string::String;
+    use alloc::vec;
+    use alloc::vec::Vec;
     use bls12_381_plus::{G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
+    use core::any::TypeId;
     use elliptic_curve::{
         group::Curve,
         hash2curve::{ExpandMsg, Expander},
     };
     use ff::Field;
-    use rand::{thread_rng, RngCore};
-    use std::any::{Any, TypeId};
+    use rand_core::RngCore;
+    #[cfg(feature = "std")]
+    use std::any::Any;
+
+    #[cfg(not(feature = "std"))]
+    use core::any::Any;
 
     pub(crate) fn parse_g2_projective_compressed(slice: &[u8]) -> Result<G2Projective, Error> {
         let point = G2Affine::from_compressed(
@@ -68,8 +77,7 @@ pub mod bbsplus_utils {
     ///
     /// # Output
     /// * Vec<u8>, a secret
-    pub fn generate_random_secret(n: usize) -> Vec<u8> {
-        let mut rng = thread_rng();
+    pub fn generate_random_secret<R: RngCore>(rng: &mut R, n: usize) -> Vec<u8> {
         let mut secret = vec![0; n]; // Initialize a vector of length n with zeros
         rng.fill_bytes(&mut secret); // Fill the vector with random bytes
         secret
@@ -223,6 +231,7 @@ pub mod bbsplus_utils {
     {
         let mut result: Vec<u8> = Vec::new();
         if array.len() == 0 {
+            #[cfg(feature = "std")]
             println!("Empty array");
             return result;
         }
@@ -260,6 +269,7 @@ pub mod bbsplus_utils {
                 }
             }
         } else {
+            #[cfg(feature = "std")]
             println!("Unknown struct type");
         }
 
@@ -284,8 +294,7 @@ pub mod bbsplus_utils {
         out
     }
 
-    pub(crate) fn get_random() -> Scalar {
-        let rng = rand::thread_rng();
+    pub(crate) fn get_random<R: RngCore>(rng: &mut R) -> Scalar {
         Scalar::random(rng)
     }
 
@@ -302,11 +311,11 @@ pub mod bbsplus_utils {
     /// * a [`Vec<Scalar>`].
     ///
     #[cfg(not(test))]
-    pub fn calculate_random_scalars(count: usize) -> Vec<Scalar> {
+    pub fn calculate_random_scalars<R: RngCore>(rng: &mut R, count: usize) -> Vec<Scalar> {
         let mut random_scalars: Vec<Scalar> = Vec::new();
 
         for _i in 0..count {
-            random_scalars.push(get_random());
+            random_scalars.push(get_random(rng));
         }
 
         random_scalars
@@ -520,6 +529,7 @@ pub mod bbsplus_utils {
 
 #[cfg(feature = "cl03")]
 pub mod cl03_utils {
+    use alloc::vec::Vec;
     use rug::{integer::Order, Integer};
 
     //b*x = a mod m -> return x
@@ -567,6 +577,8 @@ pub mod cl03_utils {
         // }
     }
 }
+
+use alloc::vec::Vec;
 
 pub(crate) fn get_remaining_indexes(length: usize, indexes: &[usize]) -> Vec<usize> {
     let mut remaining: Vec<usize> = Vec::new();

@@ -12,9 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
+
+#[cfg(test)]
+#[macro_use]
+extern crate std;
+
+extern crate alloc;
 
 pub mod errors;
 pub mod keys;

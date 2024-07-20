@@ -13,8 +13,11 @@
 // limitations under the License.
 
 use crate::schemes::algorithms::Scheme;
+#[cfg(feature = "std")]
+use alloc::string::String;
 use serde::Deserialize;
 use serde::Serialize;
+#[cfg(feature = "std")]
 use std::env;
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -40,6 +43,7 @@ where
         (self.private, self.public)
     }
 
+    #[cfg(feature = "std")]
     pub fn write_keypair_to_file(&self, file: Option<String>) {
         println!("writhing to file...");
 

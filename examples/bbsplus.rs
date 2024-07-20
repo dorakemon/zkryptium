@@ -74,7 +74,7 @@ mod bbsplus_example {
         log::info!("Signature is VALID");
 
         //Holder receive nonce from Verifier
-        let nonce_verifier = generate_random_secret(32);
+        let nonce_verifier = generate_random_secret(&mut rng, 32);
         log::info!("Generate Nonce...");
         log::info!("Nonce: {}", hex::encode(&nonce_verifier));
 
@@ -83,6 +83,7 @@ mod bbsplus_example {
         //Holder generates SPoK
         log::info!("Proof of Knowledge of the Signature Generation...");
         let proof = PoKSignature::<BBSplus<S::Ciphersuite>>::proof_gen(
+            &mut rng,
             issuer_pk,
             &signature.to_bytes(),
             Some(&header),

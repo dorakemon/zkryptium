@@ -18,6 +18,7 @@ pub mod bbsplus_message {
     use crate::bbsplus::ciphersuites::BbsCiphersuite;
     use crate::errors::Error;
     use crate::utils::util::bbsplus_utils::hash_to_scalar;
+    use alloc::vec::Vec;
     use bls12_381_plus::Scalar;
     use elliptic_curve::hash2curve::ExpandMsg;
     use serde::{Deserialize, Serialize};
@@ -98,12 +99,15 @@ pub mod bbsplus_message {
     }
 
     #[cfg(test)]
+
     mod tests {
 
         use crate::bbsplus::ciphersuites::BbsCiphersuite;
         use crate::schemes::algorithms::Scheme;
         use crate::schemes::algorithms::{BbsBls12381Sha256, BbsBls12381Shake256};
         use crate::utils::message::bbsplus_message::BBSplusMessage;
+        use alloc::string::{String, ToString};
+        use alloc::vec::Vec;
         use elliptic_curve::hash2curve::ExpandMsg;
         use std::fs;
 

@@ -28,16 +28,18 @@ use crate::{
         },
     },
 };
+use alloc::format;
+use alloc::{borrow::ToOwned, vec::Vec};
 use bls12_381_plus::{multi_miller_loop, G1Projective, G2Prepared, G2Projective, Scalar};
 use elliptic_curve::{group::Curve, hash2curve::ExpandMsg, Group};
-use serde::{Deserialize, Serialize};
+use rand_core::RngCore;
 
 #[cfg(not(test))]
 use crate::utils::util::bbsplus_utils::calculate_random_scalars;
 #[cfg(test)]
 use crate::utils::util::bbsplus_utils::seeded_random_scalars;
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct BBSplusPoKSignature {
     Abar: G1Projective,
     Bbar: G1Projective,
@@ -122,7 +124,8 @@ impl<CS: BbsCiphersuite> PoKSignature<BBSplus<CS>> {
     /// # Output:
     /// a PoK of a Signature [`PoKSignature::BBSplus`] or [`Error`].
     ///
-    pub fn proof_gen(
+    pub fn proof_gen<R: RngCore>(
+        rng: &mut R,
         pk: &BBSplusPublicKey,
         signature: &[u8],
         header: Option<&[u8]>,
@@ -142,7 +145,8 @@ impl<CS: BbsCiphersuite> PoKSignature<BBSplus<CS>> {
         let message_scalars = BBSplusMessage::messages_to_scalar::<CS>(messages, CS::API_ID)?;
         let generators = Generators::create::<CS>(messages.len() + 1, Some(CS::API_ID));
 
-        let proof = core_proof_gen::<CS>(
+        let proof = core_proof_gen::<CS, R>(
+            rng,
             pk,
             &signature,
             &generators,
@@ -179,7 +183,8 @@ impl<CS: BbsCiphersuite> PoKSignature<BBSplus<CS>> {
     /// # Output:
     /// ([`PoKSignature::BBSplus`], [`Vec<Vec<u8>>`], [`Vec<usize>`]) or [`Error`]: a PoK of a Signature, a vector of octet strings representing all the disclosed messages and their indexes.
     ///
-    pub fn blind_proof_gen(
+    pub fn blind_proof_gen<R: RngCore>(
+        rng: &mut R,
         pk: &BBSplusPublicKey,
         signature: &[u8],
         header: Option<&[u8]>,
@@ -254,7 +259,8 @@ impl<CS: BbsCiphersuite> PoKSignature<BBSplus<CS>> {
             secret_prover_blind,
         );
 
-        let proof = core_proof_gen::<CS>(
+        let proof = core_proof_gen::<CS, R>(
+            rng,
             pk,
             &signature,
             &generators,
@@ -404,7 +410,8 @@ impl<CS: BbsCiphersuite> PoKSignature<BBSplus<CS>> {
 /// # Output:
 /// a PoK of a Signature [`BBSplusPoKSignature`] or [`Error`].
 ///
-fn core_proof_gen<CS>(
+fn core_proof_gen<CS, R: RngCore>(
+    _rng: &mut R,
     pk: &BBSplusPublicKey,
     signature: &BBSplusSignature,
     generators: &Generators,
@@ -448,7 +455,7 @@ where
     let undisclosed_messages = get_messages(messages, &undisclosed_indexes);
 
     #[cfg(not(test))]
-    let random_scalars = calculate_random_scalars(5 + U);
+    let random_scalars = calculate_random_scalars(_rng, 5 + U);
 
     #[cfg(test)]
     let random_scalars = seeded_random_scalars::<CS>(5 + U, _seed, _dst);
@@ -483,7 +490,7 @@ where
     Ok(proof)
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 struct ProofInitResult {
     Abar: G1Projective,
     Bbar: G1Projective,
@@ -846,7 +853,7 @@ where
 }
 
 /// Represents a Commitment proof
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct BBSplusZKPoK {
     pub(crate) s_cap: Scalar,
     pub(crate) m_cap: Vec<Scalar>,
@@ -910,7 +917,10 @@ mod tests {
         },
         utils::util::bbsplus_utils::{get_messages_vec, ScalarExt},
     };
+    use alloc::string::String;
+    use alloc::vec::Vec;
     use elliptic_curve::hash2curve::ExpandMsg;
+    use rand::thread_rng;
     use std::{collections::BTreeMap, fs};
 
     //mocked_rng - SHA256 - UPDATED
@@ -1270,6 +1280,7 @@ mod tests {
         S::Ciphersuite: BbsCiphersuite,
         <S::Ciphersuite as BbsCiphersuite>::Expander: for<'a> ExpandMsg<'a>,
     {
+        let mut rng = thread_rng();
         let data =
             fs::read_to_string([pathname, proof_filename].concat()).expect("Unable to read file");
         let proof_json: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
@@ -1317,6 +1328,7 @@ mod tests {
             .collect();
 
         let proof = PoKSignature::<BBSplus<S::Ciphersuite>>::proof_gen(
+            &mut rng,
             &PK,
             &signature.to_bytes(),
             Some(&header),
@@ -1380,6 +1392,7 @@ mod tests {
         S::Ciphersuite: BbsCiphersuite,
         <S::Ciphersuite as BbsCiphersuite>::Expander: for<'a> ExpandMsg<'a>,
     {
+        let mut rng = thread_rng();
         let data =
             fs::read_to_string([pathname, proof_filename].concat()).expect("Unable to read file");
         let proof_json: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
@@ -1455,6 +1468,7 @@ mod tests {
 
         let (proof, disclosed_msgs, disclosed_idxs) =
             PoKSignature::<BBSplus<S::Ciphersuite>>::blind_proof_gen(
+                &mut rng,
                 &pk,
                 &signature.to_bytes(),
                 Some(&header),

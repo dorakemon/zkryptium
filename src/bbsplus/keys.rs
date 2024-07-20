@@ -21,11 +21,14 @@ use crate::{
     },
     schemes::algorithms::BBSplus,
     utils::util::bbsplus_utils::{
-        generate_random_secret, hash_to_scalar, i2osp, parse_g2_projective_compressed, parse_g2_projective_uncompressed
+        generate_random_secret, hash_to_scalar, i2osp, parse_g2_projective_compressed,
+        parse_g2_projective_uncompressed,
     },
 };
+use alloc::{borrow::ToOwned, string::String};
 use bls12_381_plus::{G2Affine, G2Projective, Scalar};
 use elliptic_curve::{group::Curve, hash2curve::ExpandMsg};
+use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -175,12 +178,12 @@ impl<CS: BbsCiphersuite> KeyPair<BBSplus<CS>> {
     ///
     /// # Output:
     /// * a keypair [`KeyPair`]
-    pub fn random() -> Result<Self, Error>
+    pub fn random<R: RngCore>(rng: &mut R) -> Result<Self, Error>
     where
         CS::Expander: for<'a> ExpandMsg<'a>,
     {
-        let key_material = generate_random_secret(64);
-        
+        let key_material = generate_random_secret(rng, 64);
+
         let sk = key_gen::<CS>(&key_material, None, None)?;
 
         let pk = sk_to_pk(sk);

@@ -24,17 +24,18 @@ use crate::{
         },
     },
 };
+use alloc::vec::Vec;
 use bls12_381_plus::group::Curve;
 use bls12_381_plus::{G1Projective, Scalar};
 use elliptic_curve::hash2curve::ExpandMsg;
-use serde::{Deserialize, Serialize};
+use rand_core::RngCore;
 
 #[cfg(not(test))]
 use crate::utils::util::bbsplus_utils::calculate_random_scalars;
 #[cfg(test)]
 use crate::utils::util::bbsplus_utils::seeded_random_scalars;
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct BBSplusCommitment {
     pub commitment: G1Projective,
     pub proof: BBSplusZKPoK,
@@ -69,12 +70,15 @@ impl<CS: BbsCiphersuite> Commitment<BBSplus<CS>> {
     /// # Output:
     /// ([`Commitment::BBSplus`], [`BlindFactor`]), a tuple (**`commitment_with_proof`**, **`secret_prover_blind`**) or [`Error`].
     ///
-    pub fn commit(committed_messages: Option<&[Vec<u8>]>) -> Result<(Self, BlindFactor), Error>
+    pub fn commit<R: RngCore>(
+        rng: &mut R,
+        committed_messages: Option<&[Vec<u8>]>,
+    ) -> Result<(Self, BlindFactor), Error>
     where
         CS::Expander: for<'a> ExpandMsg<'a>,
     {
         let (commitment_with_proof, secret) =
-            commit::<CS>(committed_messages, Some(CS::API_ID_BLIND))?;
+            commit::<CS, R>(rng, committed_messages, Some(CS::API_ID_BLIND))?;
         Ok((Self::BBSplus(commitment_with_proof), secret))
     }
 
@@ -140,8 +144,8 @@ impl<CS: BbsCiphersuite> Commitment<BBSplus<CS>> {
 pub struct BlindFactor(pub(crate) Scalar);
 
 impl BlindFactor {
-    pub fn random() -> Self {
-        Self(get_random())
+    pub fn random<R: RngCore>(rng: &mut R) -> Self {
+        Self(get_random(rng))
     }
 
     pub fn to_bytes(&self) -> [u8; 32] {
@@ -165,7 +169,8 @@ impl BlindFactor {
 /// # Output:
 /// ([`BBSplusCommitment`], [`BlindFactor`]), a tuple (commitment + proof, secret_prover_blind) or [`Error`].
 ///
-fn commit<CS>(
+fn commit<CS, R: RngCore>(
+    _rng: &mut R,
     committed_messages: Option<&[Vec<u8>]>,
     api_id: Option<&[u8]>,
 ) -> Result<(BBSplusCommitment, BlindFactor), Error>
@@ -186,7 +191,7 @@ where
     let Js = &generators[2..M + 2];
 
     #[cfg(not(test))]
-    let random_scalars = calculate_random_scalars(M + 2);
+    let random_scalars = calculate_random_scalars(_rng, M + 2);
 
     #[cfg(test)]
     let random_scalars = seeded_random_scalars::<CS>(M + 2, CS::SEED_MOCKED_SCALAR, CS::COMMIT_DST);
@@ -280,6 +285,7 @@ mod tests {
     use std::fs;
 
     use elliptic_curve::hash2curve::ExpandMsg;
+    use rand::thread_rng;
 
     use crate::{
         bbsplus::{ciphersuites::BbsCiphersuite, generators::Generators},
@@ -288,6 +294,7 @@ mod tests {
             generics::Commitment,
         },
     };
+    use alloc::{string::String, vec::Vec};
 
     // Commitment - SHA256
 
@@ -330,6 +337,7 @@ mod tests {
         S::Ciphersuite: BbsCiphersuite,
         <S::Ciphersuite as BbsCiphersuite>::Expander: for<'a> ExpandMsg<'a>,
     {
+        let mut rng = thread_rng();
         let data = fs::read_to_string([pathname, filename].concat()).expect("Unable to read file");
         let proof_json: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
         println!("{}", proof_json["caseName"]);
@@ -351,7 +359,8 @@ mod tests {
         let expected_result = proof_json["result"]["valid"].as_bool().unwrap();
 
         let (commitment_with_proof_result, secret) =
-            Commitment::<BBSplus<S::Ciphersuite>>::commit(Some(&committed_messages)).unwrap();
+            Commitment::<BBSplus<S::Ciphersuite>>::commit(&mut rng, Some(&committed_messages))
+                .unwrap();
 
         let commitment_with_proof_result_oct = commitment_with_proof_result.to_bytes();
         assert_eq!(

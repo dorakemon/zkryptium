@@ -24,6 +24,7 @@ use crate::{
         },
     },
 };
+use alloc::{borrow::ToOwned, vec::Vec};
 use bls12_381_plus::{multi_miller_loop, G1Projective, G2Prepared, G2Projective, Gt, Scalar};
 use elliptic_curve::{group::Curve, hash2curve::ExpandMsg};
 use serde::{Deserialize, Serialize};
@@ -53,7 +54,7 @@ impl BBSplusSignature {
             .map_err(|_| Error::InvalidSignature)?;
 
         Ok(Self { A, e })
-    }  
+    }
 }
 
 impl<CS: BbsCiphersuite> Signature<BBSplus<CS>> {
@@ -346,10 +347,13 @@ mod tests {
     use crate::keys::pair::KeyPair;
     use crate::schemes::algorithms::Scheme;
     use crate::schemes::algorithms::{BbsBls12381Sha256, BbsBls12381Shake256};
+    use crate::schemes::generics::Signature;
     use crate::{
         bbsplus::keys::{BBSplusPublicKey, BBSplusSecretKey},
-        schemes::{algorithms::BBSplus, generics::Signature},
+        schemes::algorithms::BBSplus,
     };
+    use alloc::string::String;
+    use alloc::vec::Vec;
     use elliptic_curve::hash2curve::ExpandMsg;
     use std::fs;
 

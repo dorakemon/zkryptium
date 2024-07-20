@@ -12,56 +12,122 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::string::String;
+#[cfg(feature = "thiserror")]
 use thiserror::Error;
 
-#[derive(Error, Clone, Debug)]
+#[cfg_attr(feature = "thiserror", derive(Error))]
+#[derive(Clone, Debug)]
 pub enum Error {
-    #[error("Error during keypair generation")]
+    #[cfg_attr(feature = "thiserror", error("Error during keypair generation"))]
     KeyGenError(String),
-    #[error("Invalid key")]
+    #[cfg_attr(feature = "thiserror", error("Invalid key"))]
     KeyDeserializationError,
-    #[error("Error during computation of a Blind Signature")]
+    #[cfg_attr(
+        feature = "thiserror",
+        error("Error during computation of a Blind Signature")
+    )]
     BlindSignError(String),
-    #[error("Error during computation of a Signature")]
+    #[cfg_attr(
+        feature = "thiserror",
+        error("Error during computation of a Signature")
+    )]
     SignatureGenerationError(String),
-    #[error("Not a valid Signature")]
+    #[cfg_attr(feature = "thiserror", error("Not a valid Signature"))]
     InvalidSignature,
-    #[error("Error during hash to scalar computation")]
+    #[cfg_attr(
+        feature = "thiserror",
+        error("Error during hash to scalar computation")
+    )]
     HashToScalarError,
-    #[error("Error mapping a message to scalar")]
+    #[cfg_attr(feature = "thiserror", error("Error mapping a message to scalar"))]
     MapMessageToScalarError,
-    #[error("Not enough Generators")]
+    #[cfg_attr(feature = "thiserror", error("Not enough Generators"))]
     NotEnoughGenerators,
     /// [More Info](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-05#name-coresign) in the `Note` at the end
-    #[error(" A == Identity_G1")]
+    #[cfg_attr(feature = "thiserror", error(" A == Identity_G1"))]
     G1IdentityError,
-    #[error("Error during deserialization")]
+    #[cfg_attr(feature = "thiserror", error("Error during deserialization"))]
     DeserializationError(String),
-    #[error("Signature is not valid")]
+    #[cfg_attr(feature = "thiserror", error("Signature is not valid"))]
     SignatureVerificationError,
-    #[error("Error during computation of a Proof of Knowledge of a Signature")]
+    #[cfg_attr(
+        feature = "thiserror",
+        error("Error during computation of a Proof of Knowledge of a Signature")
+    )]
     ProofGenError(String),
-    #[error("Error during computation of a Blind Proof of Knowledge of a Signature")]
+    #[cfg_attr(
+        feature = "thiserror",
+        error("Error during computation of a Blind Proof of Knowledge of a Signature")
+    )]
     BlindProofGenError(String),
-    #[error("Unknown error")]
+    #[cfg_attr(feature = "thiserror", error("Unknown error"))]
     Unspecified,
-
-    #[error("Signature update failed")]
+    #[cfg_attr(feature = "thiserror", error("Signature update failed"))]
     UpdateSignatureError(String),
-
-    #[error("Invalid Proof of Knowledge of a Signature")]
+    #[cfg_attr(
+        feature = "thiserror",
+        error("Invalid Proof of Knowledge of a Signature")
+    )]
     InvalidProofOfKnowledgeSignature,
-    #[error("Proof of Knowledge of a Signature verification failed")]
+    #[cfg_attr(
+        feature = "thiserror",
+        error("Proof of Knowledge of a Signature verification failed")
+    )]
     PoKSVerificationError(String),
-
-    #[error("This should NOT happen!")]
+    #[cfg_attr(feature = "thiserror", error("This should NOT happen!"))]
     UnespectedError,
-
-    #[error("Invalid commitment")]
+    #[cfg_attr(feature = "thiserror", error("Invalid commitment"))]
     InvalidCommitment,
-    #[error("Invalid commitment proof")]
+    #[cfg_attr(feature = "thiserror", error("Invalid commitment proof"))]
     InvalidCommitmentProof,
-
-    #[error("Failed to compute the blind challenge")]
+    #[cfg_attr(feature = "thiserror", error("Failed to compute the blind challenge"))]
     ChallengeComputationFailed,
+}
+
+#[cfg(not(feature = "thiserror"))]
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error::KeyGenError(s) => write!(f, "Error during keypair generation: {}", s),
+            Error::KeyDeserializationError => write!(f, "Invalid key"),
+            Error::BlindSignError(s) => {
+                write!(f, "Error during computation of a Blind Signature: {}", s)
+            }
+            Error::SignatureGenerationError(s) => {
+                write!(f, "Error during computation of a Signature: {}", s)
+            }
+            Error::InvalidSignature => write!(f, "Not a valid Signature"),
+            Error::HashToScalarError => write!(f, "Error during hash to scalar computation"),
+            Error::MapMessageToScalarError => write!(f, "Error mapping a message to scalar"),
+            Error::NotEnoughGenerators => write!(f, "Not enough Generators"),
+            Error::G1IdentityError => write!(f, "A == Identity_G1"),
+            Error::DeserializationError(s) => write!(f, "Error during deserialization: {}", s),
+            Error::SignatureVerificationError => write!(f, "Signature is not valid"),
+            Error::ProofGenError(s) => write!(
+                f,
+                "Error during computation of a Proof of Knowledge of a Signature: {}",
+                s
+            ),
+            Error::BlindProofGenError(s) => write!(
+                f,
+                "Error during computation of a Blind Proof of Knowledge of a Signature: {}",
+                s
+            ),
+            Error::Unspecified => write!(f, "Unknown error"),
+            Error::UpdateSignatureError(s) => write!(f, "Signature update failed: {}", s),
+            Error::InvalidProofOfKnowledgeSignature => {
+                write!(f, "Invalid Proof of Knowledge of a Signature")
+            }
+            Error::PoKSVerificationError(s) => write!(
+                f,
+                "Proof of Knowledge of a Signature verification failed: {}",
+                s
+            ),
+            Error::UnespectedError => write!(f, "This should NOT happen!"),
+            Error::InvalidCommitment => write!(f, "Invalid commitment"),
+            Error::InvalidCommitmentProof => write!(f, "Invalid commitment proof"),
+            Error::ChallengeComputationFailed => write!(f, "Failed to compute the blind challenge"),
+        }
+    }
 }

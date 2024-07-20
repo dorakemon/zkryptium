@@ -13,8 +13,7 @@
 // limitations under the License.
 
 use super::algorithms::Scheme;
-use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 #[cfg(feature = "cl03")]
 use crate::cl03::{
@@ -31,25 +30,25 @@ use crate::bbsplus::{
     signature::BBSplusSignature,
 };
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum BlindSignature<S: Scheme> {
     #[cfg(feature = "bbsplus")]
     BBSplus(BBSplusSignature),
     #[cfg(feature = "cl03")]
     CL03(CL03BlindSignature),
-    _Unreachable(std::marker::PhantomData<S>),
+    _Unreachable(PhantomData<S>),
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Commitment<S: Scheme> {
     #[cfg(feature = "bbsplus")]
     BBSplus(BBSplusCommitment),
     #[cfg(feature = "cl03")]
     CL03(CL03Commitment),
-    _Unreachable(std::marker::PhantomData<S>),
+    _Unreachable(PhantomData<S>),
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum PoKSignature<S: Scheme> {
     #[cfg(feature = "bbsplus")]
     BBSplus(BBSplusPoKSignature),
@@ -58,7 +57,7 @@ pub enum PoKSignature<S: Scheme> {
     _Unreachable(PhantomData<S>),
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ZKPoK<S: Scheme> {
     #[cfg(feature = "bbsplus")]
     BBSplus(BBSplusZKPoK),
@@ -67,7 +66,7 @@ pub enum ZKPoK<S: Scheme> {
     _Unreachable(PhantomData<S>),
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Signature<S: Scheme> {
     #[cfg(feature = "bbsplus")]
     BBSplus(BBSplusSignature),

@@ -59,7 +59,7 @@ mod bbsplus_example {
             .map(|m| hex::decode(m).unwrap())
             .collect();
         let (commitment_with_proof, secret_prover_blind) =
-            Commitment::<BBSplus<S::Ciphersuite>>::commit(Some(&committed_messages))?;
+            Commitment::<BBSplus<S::Ciphersuite>>::commit(&mut rng, Some(&committed_messages))?;
 
         log::info!("Send the commitment with the proof to the Issuer");
         log::info!("Messages added by the Issuer to be signed");
@@ -96,7 +96,7 @@ mod bbsplus_example {
 
         //Holder receive nonce from Verifier
         log::info!("Generate Nonce...");
-        let nonce_verifier = generate_random_secret(32);
+        let nonce_verifier = generate_random_secret(&mut rng, 32);
         log::info!(
             "Verifier sends Nonce to the Holder: {}",
             hex::encode(&nonce_verifier)
@@ -109,6 +109,7 @@ mod bbsplus_example {
         let disclosed_commitment_indexes = [1usize];
         let (poks, all_disclosed_messages, all_disclosed_indexes) =
             PoKSignature::<BBSplus<S::Ciphersuite>>::blind_proof_gen(
+                &mut rng,
                 issuer_pk,
                 &blind_signature.to_bytes(),
                 Some(&header),
