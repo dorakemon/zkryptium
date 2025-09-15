@@ -24,6 +24,7 @@ use crate::{
         util::bbsplus_utils::{get_random, hash_to_scalar, ScalarExt},
     },
 };
+use alloc::vec;
 use alloc::{string::String, vec::Vec};
 use bls12_381_plus::{multi_miller_loop, G1Projective, G2Prepared, G2Projective, Scalar};
 use elliptic_curve::{group::Curve, hash2curve::ExpandMsg};
