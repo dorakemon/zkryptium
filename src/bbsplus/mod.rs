@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub mod bbs_device;
+pub mod bbs_proof_device;
 pub mod blind;
 pub mod ciphersuites;
 pub mod commitment;
