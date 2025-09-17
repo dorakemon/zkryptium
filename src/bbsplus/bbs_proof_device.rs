@@ -73,8 +73,9 @@ pub struct DeviceProof {
 /// - ũsk, r̃, challenge_D ← $Z_p
 /// - return (ũsk, r̃, challenge_D, h_0^ũsk, h_c^r̃)
 ///
-/// Device generates random values for proof generation
-/// Returns: CommitForProofOutput with all random values
+/// Device generates random values and computes h_0^ũsk, h_c^r̃
+/// Device stores (ũsk, r̃, challenge_D) and sends (challenge_D, h_0^ũsk, h_c^r̃) to client
+/// Returns: CommitForProofOutput with all values
 pub fn commit_for_proof<CS, R>(rng: &mut R, prm: &Generators) -> Result<CommitForProofOutput, Error>
 where
     CS: BbsCiphersuite,
@@ -90,16 +91,21 @@ where
     let h_c = prm.values.get(0).ok_or(Error::NotEnoughGenerators)?;
     let h_0 = prm.values.get(1).ok_or(Error::NotEnoughGenerators)?;
 
-    // Consistent with VC phase: h_0^ũsk and h_c^r̃
+    // Device computes: h_0^ũsk and h_c^r̃
     let h0_usk_tilde = h_0 * usk_tilde; // h_0^ũsk
     let hc_r_tilde = h_c * r_tilde; // h_c^r̃
 
+    // Device outputs: (ũsk, r̃, challenge_D, h_0^ũsk, h_c^r̃)
+    // In real implementation:
+    // - Device stores: (ũsk, r̃, challenge_D)
+    // - Device sends to client: (challenge_D, h_0^ũsk, h_c^r̃)
+    
     Ok(CommitForProofOutput {
         usk_tilde,
         r_tilde,
         challenge_d,
-        h0_usk_tilde, // h_0^ũsk
-        hc_r_tilde,   // h_c^r̃
+        h0_usk_tilde,
+        hc_r_tilde,
     })
 }
 
@@ -231,12 +237,14 @@ where
 /// - r̂ = r̃ + r · challenge
 ///
 /// Device computes response values using stored secrets
+/// Device deletes (ũsk, r̃, challenge_D) after computing response
 /// Returns: (ûsk, r̂)
 pub fn respond_for_proof<CS>(
-    _prm: &Generators,
     usk: &Scalar,
     r: &Scalar,
-    commit_output: &CommitForProofOutput,
+    usk_tilde: &Scalar,
+    r_tilde: &Scalar,
+    challenge_d: &Scalar,
     challenge_c: &Scalar,
 ) -> Result<(Scalar, Scalar), Error>
 where
@@ -245,15 +253,17 @@ where
 {
     // Calculate combined challenge = Hash(challenge_D || challenge_C)
     let mut challenge_input = Vec::new();
-    challenge_input.extend_from_slice(&commit_output.challenge_d.to_bytes_be());
+    challenge_input.extend_from_slice(&challenge_d.to_bytes_be());
     challenge_input.extend_from_slice(&challenge_c.to_bytes_be());
 
     let challenge = hash_to_scalar::<CS>(&challenge_input, b"combined_challenge")?;
 
-    // Calculate response values: ûsk = ũsk + usk · challenge, r̂ = r̃ + r · challenge
-    let usk_hat = commit_output.usk_tilde + usk * challenge;
-    let r_hat = commit_output.r_tilde + r * challenge;
+    // Calculate response values
+    let usk_hat = usk_tilde + usk * challenge;
+    let r_hat = r_tilde + r * challenge;
 
+    // In real implementation: device would delete (ũsk, r̃, challenge_D) here
+    
     Ok((usk_hat, r_hat))
 }
 
@@ -270,9 +280,9 @@ where
 /// Returns: DeviceProof
 pub fn proof_gen2<CS>(
     pre_comp: &ProofPreComputation,
-    usk_hat: &Scalar,
-    r_hat: &Scalar,
-    challenge_d: &Scalar,
+    usk_hat: Scalar,
+    r_hat: Scalar,
+    challenge_d: Scalar,
     challenge_c: &Scalar,
 ) -> Result<DeviceProof, Error>
 where
@@ -304,10 +314,10 @@ where
         r1_hat,
         r3_hat,
         m_hat,
-        usk_hat: *usk_hat,
-        r_hat: *r_hat,
+        usk_hat,
+        r_hat,
         challenge,
-        challenge_d: *challenge_d,
+        challenge_d,
     })
 }
 
@@ -496,16 +506,22 @@ mod tests {
         assert!(pre_comp.d != G1Projective::IDENTITY);
 
         // Step 3: RespondForProof
-        let (usk_hat, r_hat) =
-            respond_for_proof::<Bls12381Sha256>(&prm, &usk, &r, &commit_output, &challenge_c)
-                .unwrap();
+        let (usk_hat, r_hat) = respond_for_proof::<Bls12381Sha256>(
+            &usk,
+            &r,
+            &commit_output.usk_tilde,
+            &commit_output.r_tilde,
+            &commit_output.challenge_d,
+            &challenge_c,
+        )
+        .unwrap();
 
         // Step 4: ProofGen2
         let proof = proof_gen2::<Bls12381Sha256>(
             &pre_comp,
-            &usk_hat,
-            &r_hat,
-            &commit_output.challenge_d,
+            usk_hat,
+            r_hat,
+            commit_output.challenge_d,
             &challenge_c,
         )
         .unwrap();
